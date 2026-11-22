@@ -3,7 +3,7 @@
 // raycast vision cones are drawn, then a lighting pass drops darkness over
 // everything the lamps, the lift and the cones do not hold back.
 
-import { COLORS, GUARD, TILE, VIEW } from './config.js';
+import { CAMERA, COLORS, GUARD, TILE, VIEW } from './config.js';
 import { LEVELS } from './levels.js';
 import { tileHash } from './random.js';
 import { conePolygon } from './vision.js';
@@ -196,6 +196,34 @@ export function createRenderer(canvas) {
       drawBody(guard.x, guard.y, guard.angle, COLORS.guardBody, '#f3d9a4', false);
     }
 
+    // Ceiling cameras: a dark housing that turns with its lens, and an LED
+    // that burns red while it is looking at you.
+    for (const cam of state.cameras ?? []) {
+      ctx.save();
+      ctx.translate(cam.x, cam.y);
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.ellipse(2, 5, 10, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.rotate(cam.angle);
+      ctx.fillStyle = COLORS.cameraBody;
+      ctx.strokeStyle = 'rgba(180,220,255,0.5)';
+      ctx.beginPath();
+      ctx.roundRect(-8, -6, 17, 12, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = COLORS.cameraLens;
+      ctx.beginPath();
+      ctx.arc(8, 0, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      const led = cam.seesPlayer ? '#ff4030' : cam.flash > 0 ? '#ff4030' : '#57e6a9';
+      ctx.fillStyle = led;
+      ctx.beginPath();
+      ctx.arc(cam.x - 9, cam.y - 9, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Lighting: darkness, holes where light lives, then the cones themselves.
     lightCtx.save();
     lightCtx.globalCompositeOperation = 'source-over';
@@ -217,6 +245,23 @@ export function createRenderer(canvas) {
     hole(p.x, p.y, 76, 0.78);
     for (const guard of state.guards) hole(guard.x, guard.y, 44, 0.6);
     lightCtx.globalCompositeOperation = 'source-over';
+    // Camera cones first: a cold blue wash under the guards' warm light.
+    for (const cam of state.cameras ?? []) {
+      const poly = conePolygon(state.grid, cam.x, cam.y, cam.angle, CAMERA.fovHalfAngle, CAMERA.range);
+      const alpha = cam.flash > 0 ? 0.44 : cam.seesPlayer ? 0.36 : 0.2 + cam.detection * 0.12;
+      lightCtx.save();
+      lightCtx.beginPath();
+      poly.forEach(([px, py], i) => (i ? lightCtx.lineTo(px, py) : lightCtx.moveTo(px, py)));
+      lightCtx.closePath();
+      lightCtx.clip();
+      const grad = lightCtx.createRadialGradient(cam.x, cam.y, 6, cam.x, cam.y, CAMERA.range);
+      grad.addColorStop(0, `${COLORS.coneCamera}${alpha})`);
+      grad.addColorStop(0.75, `${COLORS.coneCamera}${alpha * 0.5})`);
+      grad.addColorStop(1, `${COLORS.coneCamera}0)`);
+      lightCtx.fillStyle = grad;
+      lightCtx.fillRect(cam.x - CAMERA.range, cam.y - CAMERA.range, CAMERA.range * 2, CAMERA.range * 2);
+      lightCtx.restore();
+    }
     for (const guard of state.guards) {
       const poly = conePolygon(state.grid, guard.x, guard.y, guard.angle, GUARD.fovHalfAngle, GUARD.viewRange);
       const base = guard.state === 'chase' ? COLORS.coneAlert : guard.detection >= 0.45 ? COLORS.coneSuspect : COLORS.coneCalm;
@@ -275,6 +320,33 @@ export function createRenderer(canvas) {
       }
     }
 
+    // Camera meters: the same arc language as the guards, in lens cyan —
+    // and a red ring the moment one trips and calls for help.
+    for (const cam of state.cameras ?? []) {
+      if (cam.detection > 0.03) {
+        ctx.strokeStyle = 'rgba(10,12,20,0.8)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cam.x, cam.y - 20, 8, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = cam.detection >= 0.75 ? '#ff5040' : '#7fd4ff';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(cam.x, cam.y - 20, 8, -Math.PI / 2, -Math.PI / 2 + cam.detection * Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+      if (cam.flash > 0) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(255,64,48,${0.75 * cam.flash})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cam.x, cam.y, 16 + (1 - cam.flash) * 22, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     drawHud(state);
     vignette();
   }
@@ -294,7 +366,7 @@ export function createRenderer(canvas) {
     const mm = String(Math.floor(state.time / 60)).padStart(2, '0');
     const ss = String(Math.floor(state.time % 60)).padStart(2, '0');
     text(`◆ ${taken}/${state.intels.length}    ${mm}:${ss}`, VIEW.width - 14, 17, { size: 14, align: 'right', color: COLORS.textDim });
-    text('WASD / ARROWS — move    SHIFT — sneak    P — pause', 14, VIEW.height - 13, { size: 11, color: COLORS.textDim, alpha: 0.75 });
+    text('WASD / ARROWS — move    SHIFT — sneak    blue sweeps are cameras: a full meter calls the guards    P — pause', 14, VIEW.height - 13, { size: 11, color: COLORS.textDim, alpha: 0.75 });
     if (state.player.sneaking) {
       text('SNEAKING', VIEW.width - 14, VIEW.height - 13, { size: 11, align: 'right', color: '#57e6a9', alpha: 0.9 });
     }
@@ -338,6 +410,7 @@ export function createRenderer(canvas) {
     text(level.sub, VIEW.width / 2, 272, { size: 17, align: 'center', color: COLORS.textDim, weight: 500 });
     text(`Intel on this floor: ◆ × ${state.intels.length} · Par ${level.parSeconds}s`, VIEW.width / 2, 322, { size: 15, align: 'center', color: COLORS.textBright });
     text('Stay out of the cones. Shadow carpet and a low crouch slow their suspicion.', VIEW.width / 2, 352, { size: 14, align: 'center', color: COLORS.textDim, weight: 500 });
+    text('The blue sweeps are ceiling cameras — cross in the blind moment, or the guards come running.', VIEW.width / 2, 378, { size: 14, align: 'center', color: COLORS.textDim, weight: 500 });
     text('ENTER — go in', VIEW.width / 2, 410, { size: 18, align: 'center' });
   }
 

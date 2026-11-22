@@ -3,9 +3,10 @@
 // is certain, and search where it vanished. Detection is a quantity, not a
 // switch — light, shadow, posture and distance all feed it.
 
-import { DETECTION, GUARD, PLAYER, SCORE, TILE } from './config.js';
+import { CAMERA, DETECTION, GUARD, PLAYER, SCORE, TILE } from './config.js';
 import { LEVELS, SOLID, TILE_INTEL, TILE_LAMP, TILE_SHADOW } from './levels.js';
 import { angleDelta, lineOfSight, tileAt, turnToward } from './vision.js';
+import { cameraSeesPlayer, makeCamera, sweepAngle } from './cameras.js';
 
 export const EVENT_NONE = 0;
 export const EVENT_INTEL = 1;
@@ -14,6 +15,7 @@ export const EVENT_CAUGHT = 4;
 export const EVENT_EXIT = 8;
 export const EVENT_SUSPECT = 16;
 export const EVENT_NOISE = 32;
+export const EVENT_CAMERA = 64;
 
 const GUARD_PATROL = 'patrol';
 const GUARD_SUSPECT = 'suspect';
@@ -76,6 +78,7 @@ export function createWorld(random) {
     grid: [],
     player: null,
     guards: [],
+    cameras: [],
     intels: [],
     exit: null,
     time: 0,
@@ -90,6 +93,7 @@ export function createWorld(random) {
     state.levelIndex = index;
     state.grid = level.map.map((row) => [...row]);
     state.guards = [];
+    state.cameras = (level.cameras ?? []).map(makeCamera);
     state.intels = [];
     state.exit = null;
     state.time = 0;
@@ -135,6 +139,50 @@ export function createWorld(random) {
     if (!p.moving) factor *= DETECTION.stillFactor;
     if (dist < 30) factor *= 2.2;
     return factor;
+  }
+
+  /** The same exposure story, read by a lens instead of an eye. */
+  function cameraExposure(dist) {
+    const p = state.player;
+    let factor = 1 - DETECTION.fillRangeFactor * (dist / CAMERA.range);
+    const tile = playerTile();
+    if (tile === TILE_SHADOW) factor *= DETECTION.shadowFactor;
+    if (tile === TILE_LAMP) factor *= 1.5;
+    if (p.sneaking) factor *= DETECTION.sneakFactor;
+    if (!p.moving) factor *= DETECTION.stillFactor;
+    if (dist < 30) factor *= 2.2;
+    return factor;
+  }
+
+  /** Advance one camera: swing the lens, read the floor, call for help. */
+  function stepCamera(cam, dt, events) {
+    const p = state.player;
+    cam.angle = sweepAngle(cam, state.time);
+    cam.flash = Math.max(0, cam.flash - dt * 1.6);
+    const sight = cameraSeesPlayer(state.grid, cam, p);
+    cam.seesPlayer = sight.visible;
+    if (sight.visible) {
+      cam.detection = Math.min(1, cam.detection + CAMERA.fillPerSecond * cameraExposure(sight.dist) * dt);
+      if (cam.detection >= 1) {
+        cam.detection = CAMERA.resetTo;
+        cam.flash = 1;
+        events |= EVENT_CAMERA;
+        // The lens has no hands: it sends the nearest free guards to look.
+        const free = state.guards
+          .filter((g) => g.state === GUARD_PATROL || g.state === GUARD_SUSPECT)
+          .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
+        for (const guard of free.slice(0, CAMERA.dispatchCount)) {
+          guard.state = GUARD_INVESTIGATE;
+          guard.target = { x: p.x, y: p.y };
+          guard.stateTime = 0;
+          guard.detection = Math.max(guard.detection, 0.6);
+          guard.lastSeen = { x: p.x, y: p.y };
+        }
+      }
+    } else {
+      cam.detection = Math.max(0, cam.detection - CAMERA.decayPerSecond * dt);
+    }
+    return events;
   }
 
   function guardSeesPlayer(guard) {
@@ -310,10 +358,12 @@ export function createWorld(random) {
     }
 
     for (const guard of state.guards) events = stepGuard(guard, dt, events);
+    for (const cam of state.cameras) events = stepCamera(cam, dt, events);
     if (events & EVENT_CAUGHT) state.finished = true;
 
-    // The building's mood, for the HUD: the single most-aware guard.
+    // The building's mood, for the HUD: the most-aware eye, human or lens.
     state.alarm = state.guards.reduce((m, g) => Math.max(m, g.detection), 0);
+    state.alarm = state.cameras.reduce((m, c) => Math.max(m, c.detection), state.alarm);
     const anyChase = state.guards.some((g) => g.state === GUARD_CHASE);
     const anySearch = state.guards.some((g) => g.state === GUARD_SEARCH || g.state === GUARD_INVESTIGATE);
     state.status = anyChase ? 'HUNTED' : state.alarm >= DETECTION.suspectAt ? 'SUSPECTED' : anySearch ? 'SEARCHING' : 'UNSEEN';

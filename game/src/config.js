@@ -28,6 +28,15 @@ export const GUARD = {
   searchSeconds: 3.2,
 };
 
+export const CAMERA = {
+  range: 152,           // how far a lens can make you out
+  fovHalfAngle: 0.42,   // radians, ~24 degrees each side
+  fillPerSecond: 0.95,  // a lens is patient, not instant
+  decayPerSecond: 0.5,
+  resetTo: 0.25,        // the meter keeps a memory after it calls the guards
+  dispatchCount: 2,     // guards a tripped camera sends to look
+};
+
 export const DETECTION = {
   fillPerSecond: 1.15,  // at point blank in full light
   fillRangeFactor: 0.45, // extra slowness at the cone's rim
@@ -79,6 +88,9 @@ export const COLORS = {
   coneCalm: 'rgba(255,196,92,',
   coneSuspect: 'rgba(255,140,48,',
   coneAlert: 'rgba(255,64,48,',
+  coneCamera: 'rgba(120,215,255,',
+  cameraBody: '#10151f',
+  cameraLens: '#9fdcff',
   darkness: 'rgba(5,7,16,0.64)',
   textDim: '#8fa3c8',
   textBright: '#eef3ff',

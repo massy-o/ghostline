@@ -7,7 +7,7 @@
 
 import { RANKS, STEP } from './config.js';
 import { createRandom } from './random.js';
-import { createWorld, EVENT_CAUGHT, EVENT_EXIT, EVENT_INTEL, EVENT_SPOTTED, EVENT_SUSPECT } from './world.js';
+import { createWorld, EVENT_CAMERA, EVENT_CAUGHT, EVENT_EXIT, EVENT_INTEL, EVENT_SPOTTED, EVENT_SUSPECT } from './world.js';
 import { ACTION_CONFIRM, ACTION_MUTE, ACTION_PAUSE, createInput } from './input.js';
 import { createAudio } from './audio.js';
 import {
@@ -120,6 +120,7 @@ function runGame() {
     if (screen !== SCREEN_PLAY) return;
     const events = world.step(STEP, input.move());
     if (events & EVENT_INTEL) audio.intel();
+    if (events & EVENT_CAMERA) audio.camera();
     if (events & EVENT_SUSPECT) audio.suspect();
     if (events & EVENT_SPOTTED) audio.spotted();
     const stride = Math.floor(world.state.player.stride);

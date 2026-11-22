@@ -1,4 +1,5 @@
-// The three floors of the Kestrel Building, as tile maps with guard patrols.
+// The three floors of the Kestrel Building, as tile maps with guard patrols
+// and the ceiling cameras that sweep them (see cameras.js for the fields).
 //
 // Legend:  #  wall (blocks sight and movement)     C  crate (blocks both)
 //          =  curtained doorway (passable, blocks sight)
@@ -47,6 +48,9 @@ export const LEVELS = [
       { points: [[24, 13], [29, 13], [29, 17], [24, 17]] },
       { points: [[2, 18], [9, 18], [9, 17], [4, 17]] },
     ],
+    cameras: [
+      { col: 24, row: 3, base: 0.9, sweep: 0.65, period: 8, phase: 0.6 },
+    ],
   },
   {
     name: 'FLOOR 02 — ARCHIVES',
@@ -80,6 +84,10 @@ export const LEVELS = [
       { points: [[2, 15], [8, 15], [8, 18], [2, 18]] },
       { points: [[24, 17], [29, 17], [29, 12], [26, 12]] },
     ],
+    cameras: [
+      { col: 20, row: 9, base: 1.57, sweep: 0.6, period: 9, phase: 2.2 },
+      { col: 28, row: 6, base: -1.2, sweep: 0.65, period: 7.5, phase: 4.0 },
+    ],
   },
   {
     name: 'FLOOR 03 — THE VAULT',
@@ -108,10 +116,14 @@ export const LEVELS = [
       '################################',
     ],
     patrols: [
-      { points: [[12, 2], [17, 2], [17, 4], [14, 4], [14, 2]] },
+      { points: [[12, 2], [17, 2], [17, 4], [15, 4], [14, 2]] },
       { points: [[27, 9], [29, 9], [29, 12], [24, 12]] },
       { points: [[2, 14], [9, 14], [9, 18], [2, 18]] },
       { points: [[26, 18], [29, 18], [29, 15], [26, 15]] },
+    ],
+    cameras: [
+      { col: 17, row: 8, base: 1.57, sweep: 0.75, period: 8.5, phase: 1.1 },
+      { col: 25, row: 3, base: 0.5, sweep: 0.6, period: 7, phase: 3.4 },
     ],
   },
 ];

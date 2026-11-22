@@ -39,7 +39,8 @@ function step(world, ticks, move = IDLE) {
 
 export function stageShot(name, world) {
   if (name === 'play') {
-    // Archives: a guard has half-seen the operative slip along the shelves.
+    // Archives: a guard has half-seen the operative slip along the shelves,
+    // while a ceiling camera sweeps the room behind them both.
     world.loadLevel(1);
     placePlayer(world, 10, 16, 0, true);
     placeGuard(world, 2, 7, 16, 0, 'suspect', 0.58);
@@ -47,9 +48,10 @@ export function stageShot(name, world) {
     return { screen: SCREEN_PLAY, meta: {} };
   }
   if (name === 'shadow') {
-    // The Vault: crouched in the one strip of shadow while a cone rakes past.
+    // The Vault: crouched in the shadow strip while a camera's blue sweep
+    // rakes the lamp grid and a guard's warm cone crosses from the east.
     world.loadLevel(2);
-    placePlayer(world, 19, 10, 0, true);
+    placePlayer(world, 5, 9, 0, true);
     placeGuard(world, 1, 23, 10, Math.PI, 'patrol', 0.3);
     step(world, 12);
     return { screen: SCREEN_PLAY, meta: {} };

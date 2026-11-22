@@ -4,7 +4,8 @@
 // The game itself is the game/ folder beside this file: plain static files a
 // desktop browser runs offline — a top-down stealth game across three floors
 // of a night building, with raycast vision cones, light and shadow that
-// detection truly reads, patrols that investigate, search and chase, and a
+// detection truly reads, ceiling cameras whose filled meters dispatch the
+// nearest guards, patrols that investigate, search and chase, and a
 // scored rank for the whole night. This program copies game/ and the four
 // staged screenshots into the output directory and writes dossier.json, the
 // summary the pairwise judge reads, with the vendored make.fun library.

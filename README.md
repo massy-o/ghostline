@@ -22,6 +22,10 @@ Your night is scored and ranked — GHOST is earned, never given.
 - A half-seen shape makes a guard stop and stare (`?`). A certain one gives
   chase (`!`). Break their sight and they search where you vanished, then
   settle back to their rounds.
+- **Ceiling cameras** sweep the floors in cold blue. A lens cannot catch
+  you, but its meter fills like a guard's — light, shadow and posture count
+  the same way — and a full meter calls the two nearest guards straight to
+  the spot where it saw you. Cross in the blind moment of the sweep.
 - Score: a base per floor, a bonus per intel, a bonus for never being
   spotted, and a slow bleed for every second inside.
 

@@ -50,6 +50,7 @@ export function createAudio() {
     get muted() { return muted; },
     intel() { tone(1180, 0.14, 'sine', 0.07); setTimeout(() => tone(1560, 0.18, 'sine', 0.06), 60); },
     suspect() { tone(340, 0.16, 'triangle', 0.05, 420); },
+    camera() { tone(1560, 0.09, 'square', 0.03); setTimeout(() => tone(1560, 0.09, 'square', 0.03), 130); },
     spotted() { tone(220, 0.4, 'sawtooth', 0.07, 520); },
     caught() { tone(160, 0.7, 'square', 0.08, 60); },
     clear() { tone(660, 0.16, 'sine', 0.06); setTimeout(() => tone(880, 0.24, 'sine', 0.06), 110); },
