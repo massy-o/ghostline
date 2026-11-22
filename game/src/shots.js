@@ -39,12 +39,15 @@ function step(world, ticks, move = IDLE) {
 
 export function stageShot(name, world) {
   if (name === 'play') {
-    // Archives: a guard has half-seen the operative slip along the shelves,
-    // while a ceiling camera sweeps the room behind them both.
+    // Archives: the operative breaks cover and runs — footfall rings
+    // spreading to the noise radius — while one guard half-sees her slip
+    // along the shelves, another turns to investigate the noise, and a
+    // ceiling camera sweeps the room behind them all.
     world.loadLevel(1);
-    placePlayer(world, 10, 16, 0, true);
+    placePlayer(world, 10, 16, 0, false);
     placeGuard(world, 2, 7, 16, 0, 'suspect', 0.58);
-    step(world, 24);
+    placeGuard(world, 0, 13, 13, Math.PI, 'investigate', 0.4);
+    step(world, 24, { x: 1, y: 0, sneak: false });
     return { screen: SCREEN_PLAY, meta: {} };
   }
   if (name === 'shadow') {

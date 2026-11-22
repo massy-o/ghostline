@@ -18,7 +18,11 @@ Your night is scored and ranked — GHOST is earned, never given.
   and curtained doorways block their sight exactly as drawn.
 - Detection is a quantity, not a switch. It fills faster up close, in lamp
   light, and when you run; slower in shadow carpet, crouched low, or holding
-  still. Running feet are *heard* — nearby guards come to look.
+  still. Running feet are *heard* — nearby guards come to look, and every
+  footfall draws an expanding ring that shows exactly how far the noise
+  carries. When a chase is on, the frame itself pulses red at the edges.
+  Each floor is dressed in its own accent — shelf strips and worn rugs in
+  amber, green and steel — so the rooms read as places, not grids.
 - A half-seen shape makes a guard stop and stare (`?`). A certain one gives
   chase (`!`). Break their sight and they search where you vanished, then
   settle back to their rounds.

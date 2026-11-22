@@ -3,7 +3,7 @@
 // raycast vision cones are drawn, then a lighting pass drops darkness over
 // everything the lamps, the lift and the cones do not hold back.
 
-import { CAMERA, COLORS, GUARD, TILE, VIEW } from './config.js';
+import { CAMERA, COLORS, GUARD, PLAYER, TILE, VIEW } from './config.js';
 import { LEVELS } from './levels.js';
 import { tileHash } from './random.js';
 import { conePolygon } from './vision.js';
@@ -133,6 +133,36 @@ export function createRenderer(canvas) {
           g.moveTo(x + TILE - 4, y + 4);
           g.lineTo(x + 4, y + TILE - 4);
           g.stroke();
+        }
+      }
+    }
+    // Dressing: each floor gets its own accent — shelf strips along the
+    // walls and worn rugs on the open floor, placed by the same tile hash
+    // that varies the floor tone, so the rooms read as places, not grids.
+    const ACCENTS = ['#6d5322', '#3f5a3a', '#46617c'];
+    const accent = ACCENTS[state.levelIndex % ACCENTS.length];
+    for (let row = 0; row < grid.length; row += 1) {
+      for (let col = 0; col < grid[row].length; col += 1) {
+        if (grid[row][col] !== '.') continue;
+        const x = col * TILE;
+        const y = row * TILE;
+        const h = tileHash(col * 3 + 11, row * 7 + 5);
+        if (row > 0 && grid[row - 1][col] === '#' && h < 0.34) {
+          g.fillStyle = accent;
+          g.globalAlpha = 0.55;
+          g.fillRect(x + 2, y, TILE - 4, 7);
+          g.globalAlpha = 0.8;
+          g.fillRect(x + 4 + (h * 47) % 8, y + 1, 3, 5);
+          g.fillRect(x + 16 + (h * 31) % 6, y + 1, 4, 5);
+          g.globalAlpha = 1;
+        } else if (h > 0.9) {
+          g.fillStyle = accent;
+          g.globalAlpha = 0.4;
+          g.fillRect(x + 4, y + 5, TILE - 8, TILE - 10);
+          g.globalAlpha = 0.65;
+          g.strokeStyle = accent;
+          g.strokeRect(x + 6.5, y + 7.5, TILE - 13, TILE - 15);
+          g.globalAlpha = 1;
         }
       }
     }
@@ -293,6 +323,28 @@ export function createRenderer(canvas) {
         ctx.stroke();
         ctx.restore();
       }
+    }
+
+    // Footfall rings: running is loud, and the rings show exactly how loud —
+    // they expand to the noise radius and fade.
+    for (const ripple of state.ripples ?? []) {
+      const k = ripple.t / 0.85;
+      ctx.save();
+      ctx.strokeStyle = `rgba(190,220,255,${(0.42 * (1 - k)).toFixed(3)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ripple.x, ripple.y, 6 + k * PLAYER.noiseRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Hunted: the frame itself pulses red at the edges.
+    if (state.status === 'HUNTED') {
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,64,48,${(0.32 + 0.22 * Math.sin(state.time * 7)).toFixed(3)})`;
+      ctx.lineWidth = 7;
+      ctx.strokeRect(3, 3, VIEW.width - 6, VIEW.height - 6);
+      ctx.restore();
     }
 
     // Guard indicators: detection arc and state mark.

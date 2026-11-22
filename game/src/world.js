@@ -86,6 +86,7 @@ export function createWorld(random) {
     alarm: 0,
     status: 'UNSEEN',
     finished: false,
+    ripples: [],
   };
 
   function loadLevel(index) {
@@ -101,6 +102,7 @@ export function createWorld(random) {
     state.alarm = 0;
     state.status = 'UNSEEN';
     state.finished = false;
+    state.ripples = [];
     let guardIndex = 0;
     level.map.forEach((row, r) => {
       [...row].forEach((ch, c) => {
@@ -108,7 +110,7 @@ export function createWorld(random) {
           const p = centre(c, r);
           state.player = {
             x: p.x, y: p.y, radius: PLAYER.radius, angle: -Math.PI / 2,
-            sneaking: false, moving: false, stride: 0,
+            sneaking: false, moving: false, stride: 0, rippleTimer: 0,
           };
         } else if (ch === 'G') {
           state.guards.push(makeGuard(state.grid, [c, r], level.patrols[guardIndex], guardIndex));
@@ -329,7 +331,14 @@ export function createWorld(random) {
       p.angle = Math.atan2(move.y, move.x);
       p.stride += dt * (p.sneaking ? 6 : 10);
       if (!p.sneaking) {
-        // Running feet carry: nearby guards come to look.
+        // Running feet carry — and the renderer draws each footfall ring so
+        // the player can see exactly how far their noise reaches.
+        p.rippleTimer -= dt;
+        if (p.rippleTimer <= 0) {
+          state.ripples.push({ x: p.x, y: p.y, t: 0 });
+          p.rippleTimer = 0.26;
+        }
+        // Nearby guards come to look.
         for (const guard of state.guards) {
           const d = Math.hypot(guard.x - p.x, guard.y - p.y);
           if (d < PLAYER.noiseRadius && guard.state === GUARD_PATROL) {
@@ -356,6 +365,10 @@ export function createWorld(random) {
       state.finished = true;
       events |= EVENT_EXIT;
     }
+
+    // Footfall rings expand and fade.
+    for (const ripple of state.ripples) ripple.t += dt;
+    state.ripples = state.ripples.filter((ripple) => ripple.t < 0.85);
 
     for (const guard of state.guards) events = stepGuard(guard, dt, events);
     for (const cam of state.cameras) events = stepCamera(cam, dt, events);
